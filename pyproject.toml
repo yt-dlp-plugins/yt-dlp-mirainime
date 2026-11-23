@@ -1,0 +1,39 @@
+[project]
+name = "yt-dlp-mirainime"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Asep5K", email = "Asep5K@proton.me" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "yt-dlp[default]>=2026.8.19",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+ignore = [
+  "RUF012",
+]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+multiline-quotes = "double"
+docstring-quotes = "double"
+avoid-escape = false
+
+[tool.ty.rules]
+unused-ignore-comment = "warn"
+possibly-missing-import = "error"
+redundant-cast = "ignore"
