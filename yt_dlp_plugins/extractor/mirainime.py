@@ -12,13 +12,12 @@ class MiraiNimeIE(InfoExtractor):
     IE_NAME = 'mirainime'
     _VALID_URL = r'https://mirainime\.com/anime/(?P<slug>[^/]+)/episode/(?P<ep>\d+)$'
     # https://mirainime.com/anime/mononogatari-sub-indo/episode/3
-    _data_stream_cache = {}
 
     def _real_extract(self, url: str):
         slug ,ep= self._match_valid_url(url).groups()
         video_id = f'{slug}-{ep}'
-        webpage: str = self._download_webpage(url_or_request=url, video_id=video_id)
 
+        webpage = self._download_webpage(url_or_request=url, video_id=video_id)
         player_opts: dict[str, str | Any] = self._search_json(
             start_pattern= r'window\.b2PlayerOptions\s*=', string=webpage, name='player options',video_id=video_id
         )
@@ -26,14 +25,12 @@ class MiraiNimeIE(InfoExtractor):
         exp: int = player_opts.get('streamTokens').get('exp')  # type:ignore
         sig: str = player_opts.get('streamTokens').get('sigs').get(ep)  # type:ignore
 
-        if not self._data_stream_cache.get(slug):
-            self._data_stream_cache[slug]: dict[str, str | Any] = self._download_json(
-                f'https://mirainime.com/anime/{slug}/episode/{ep}/streams',
-                video_id,
-                headers={'Accept': 'application/json', 'X-Stream-Token': f'{exp}.{sig}', 'Referer': url},
-            )
+        data_streams: dict[str, str | Any] = self._download_json(
+                 f'https://mirainime.com/anime/{slug}/episode/{ep}/streams',
+                 video_id,
+                 headers={'Accept': 'application/json', 'X-Stream-Token': f'{exp}.{sig}', 'Referer': url},
+             )
 
-        data_streams = self._data_stream_cache[slug]
         if (hls_url := data_streams.get('hlsUrl') or '') != '':
             formats:list[dict[str,str|int]] = self._extract_m3u8_formats(m3u8_url=hls_url, video_id=slug, headers={
                 'referer': 'https://mirainime.com/'
@@ -44,7 +41,7 @@ class MiraiNimeIE(InfoExtractor):
         for src in data_streams.get('gdriveSources') or []:
             if not (url := src.get('url')):
                 continue
-            res: str = src.get("resolution") or '0'
+            res: str  = src.get("resolution") or '0'
             formats.append(
                 {
                     'url': url,
@@ -75,7 +72,7 @@ class MiraiNimePlaylistIE(MiraiNimeIE):
         slug: str = self._match_id(url)
         webpage:str = self._download_webpage(url, slug)
         regex = rf'''(?sx)
-        <a\s*href="(?P<url>https://mirainime\.com/anime/{slug}/episode/\d+)".*?
+        <a\s*href="(?P<url>https://mirainime\.com/anime/{slug}/episode/(?P<ep>\d+))".*?
         (?:(?!</a>).)*?
         <img\s*src="(?P<thumb>[^"]+)"'''
 
@@ -84,9 +81,9 @@ class MiraiNimePlaylistIE(MiraiNimeIE):
             if match_url:
                 entries.append(self.url_result(
                     url_transparent=True,
-                    url= (url := match_url.group('url')),
+                    url= match_url.group('url'),
                     ie='MiraiNime', 
-                    video_id=f'{slug}-{(ep :=url[-1])}',
+                    video_id=f'{slug}-{(ep := match_url.group("ep"))}',
                     thumbnail=match_url.group('thumb'),
                     video_title=f'{slug} Episode {ep}',
                     episode_number=int(ep),
